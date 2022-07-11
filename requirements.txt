@@ -1,4 +1,42 @@
-boto3==1.17.58
+# Requires explicit installation in EC2
+wheel
+
+# Django web framework
 Django==3.2
+
+# Django Cors Headers - Used to enable CORS headers in API responses, and allow requests to be made to your API server from other origins.
+django-cors-headers
+
+# Ease of use tools for development
+django-extensions
+
+# Django utility
+django-shell-plus
+
+# Django Rest Framework - Used to design API logic
+djangorestframework
+
+# Django Rest Framework - Used to design API logic
 django-storages==1.11.1
-gunicorn==20.1.0
+
+# JWT auth: Token based authentication for protected API end points
+djangorestframework-simplejwt
+
+# Interactive pdb for debugging
+ipdb
+
+#interactive python for shell plus
+ipython
+
+# To interact with Postgres db from the django
+psycopg2-binary
+psycopg2
+
+# Interface between NGINX and Django app
+uwsgi
+
+# To generate map tiles from orthos
+rio-tiler==3.0.3
+
+# Python Image Library
+pillow

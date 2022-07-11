@@ -1,0 +1,62 @@
+
+html{
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+body{
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background-color:rgb(88, 162, 92);
+}
+.login-body{
+    background-color:rgb(162, 88, 92)
+}
+form{
+    display: inline-block;
+}
+header{
+    height: 15%;
+    width: 100%;
+    padding: 15px;
+}
+main{
+    height: 70%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+footer{
+    height: 15%;
+    width: 100%;
+
+}
+
+.logout{
+    float: right
+}
+.log-in{
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+.modal-body{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+#seconds-counter{
+    font-size: 65px;
+}

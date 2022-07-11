@@ -1,0 +1,312 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload/Create</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script>
+    function bg_change(){
+        // console.log('in')
+        color = Math.floor(Math.random() * 4)
+        console.log(color)
+        colors = ['rgb(88, 162, 92)', 'rgb(0, 162, 92)', 'rgb(88, 0, 92)', 'rgb(88, 162, 0)']
+        console.log(colors[color])
+        $('body').css('background-color', colors[color])
+        console.log('out')
+    }
+    function closeModal(){
+        $('#redirectModal').addClass('fade');
+        $('#redirectModal').removeClass('d-block');
+    }
+    $(document).ready(function(){
+
+        // setup session cookie data. This is Django-related
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getCookie('csrftoken');
+        function csrfSafeMethod(method) {
+            // these HTTP methods do not require CSRF protection
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+        // end session cookie data setup.
+
+
+
+    // declare an empty array for potential uploaded files
+    var fileItemList = []
+
+    // auto-upload on file input change.
+    $(document).on('change','#id_image', function(event){
+        var selectedFiles = $(this).prop('files');
+        formItem = $(this).parent()
+        $.each(selectedFiles, function(index, item){
+            // var myFile = verifyFileIsImageMovieAudio(item)
+            if (item){
+                console.log('before upload function')
+                uploadFile(item)
+            } else {
+                alert("Some files are invalid uploads.")
+            }
+        })
+        $(this).val('');
+
+    })
+
+
+
+    function verifyFileIsImageMovieAudio(file){
+        // verifies the file extension is one we support.
+        var extension = file.name.split('.').pop().toLowerCase(); //file.substr( (file.lastIndexOf('.') +1) );
+        switch(extension) {
+            case 'jpg':
+            case 'png':
+            case 'gif':
+            case 'jpeg':
+                return file
+            case 'mov':
+            case 'mp4':
+            case 'mpeg4':
+            case 'avi':
+                return file
+            case 'mp3':
+                return file
+            default:
+                notAllowedFiles.push(file)
+                return null
+        }
+    };
+
+    function constructFormPolicyData(policyData, fileItem) {
+       var contentType = fileItem.type != '' ? fileItem.type : 'application/octet-stream'
+        var url = policyData.url
+        var filename = policyData.filename
+        var responseUser = policyData.user
+        // var keyPath = 'www/' + responseUser + '/' + filename
+        var keyPath = policyData.file_bucket_path
+        var fd = new FormData()
+        fd.append('key', keyPath + filename);
+        fd.append('acl','public-read');
+        fd.append('Content-Type', contentType);
+        fd.append("AWSAccessKeyId", policyData.key)
+        fd.append('Policy', policyData.policy);
+        fd.append('filename', filename);
+        fd.append('Signature', policyData.signature);
+        fd.append('file', fileItem);
+        return fd
+    }
+
+    var count = 3;
+    var counter = null;
+    var redirect_url = null;
+    function counterFunction(){
+        if(!$('#redirectModal').hasClass('fade') && count >=0){
+            $('#seconds-counter').text(count);
+            count-=1
+        }
+        else{
+            console.log('clearing counter')
+            window.clearInterval(counter);
+            console.log(redirect_url)
+            if(!$('#redirectModal').hasClass('fade')){
+                window.location.href = redirect_url;
+            }
+        }
+    }
+
+    function fileUploadComplete(fileItem, policyData){
+        data = {
+            uploaded: true,
+            fileSize: fileItem.size,
+            file: policyData.file_uuid,
+            upload_url: policyData.url + '/' + policyData.file_bucket_path + policyData.filename
+
+        }
+        $.ajax({
+            method:"POST",
+            data: data,
+            url: "api/upload/complete/",
+            success: function(data){
+                //alert(data.result)
+                console.log(data.urls)
+                redirect_url = data.urls;
+                $('#redirectModal').addClass('d-block');
+                $('#redirectModal').removeClass('fade');
+                counter = setInterval(function(){ counterFunction()}, 990)
+                //displayItems(fileItemList)
+            },
+            error: function(jqXHR, textStatus, errorThrown){
+                alert("An error occured, please refresh the page.")
+            }
+        })
+    }
+
+    function displayItems(fileItemList){
+        var itemList = $('.item-loading-queue')
+        itemList.html("")
+        $.each(fileItemList, function(index, obj){
+            var item = obj.file
+            var id_ = obj.id
+            var order_ = obj.order
+            var html_ = "<div class=\"progress\">" +
+              "<div class=\"progress-bar\" role=\"progressbar\" style='width:" + item.progress + "%' aria-valuenow='" + item.progress + "' aria-valuemin=\"0\" aria-valuemax=\"100\"></div></div>"
+            itemList.append("<div>" + order_ + ") " + item.name + "<a href='#' class='srvup-item-upload float-right' data-id='" + id_ + ")'>X</a> <br/>" + html_ + "</div><hr/>")
+
+        })
+    }
+
+
+    function uploadFile(fileItem){
+            var policyData;
+            var newLoadingItem;
+            // get AWS upload policy for each file uploaded through the POST method
+            // Remember we're creating an instance in the backend so using POST is
+            // needed.
+            console.log('prior to backend ajax')
+            $.ajax({
+                method:"POST",
+                data: {
+                    filename: fileItem.name
+                },
+                url: "/video/api/files/policy/",
+                success: function(data){
+                        policyData = data
+                },
+                error: function(data){
+                    alert("An error occured, please try again later")
+                }
+            }).done(function(){
+                // construct the needed data using the policy for AWS
+                var fd = constructFormPolicyData(policyData, fileItem)
+                console.log('prior xhr')
+                // use XML http Request to Send to AWS.
+                var xhr = new XMLHttpRequest()
+
+                // construct callback for when uploading starts
+                xhr.upload.onloadstart = function(event){
+                    var inLoadingIndex = $.inArray(fileItem, fileItemList)
+                    if (inLoadingIndex == -1){
+                        // Item is not loading, add to inProgress queue
+                        newLoadingItem = {
+                            file: fileItem,
+                            id: policyData.file_uuid,
+                            order: fileItemList.length + 1
+                        }
+                        fileItemList.push(newLoadingItem)
+                      }
+                    fileItem.xhr = xhr
+                }
+
+                // Monitor upload progress and attach to fileItem.
+                xhr.upload.addEventListener("progress", function(event){
+                    if (event.lengthComputable) {
+                     var progress = Math.round(event.loaded / event.total * 100);
+                        fileItem.progress = progress
+                        displayItems(fileItemList)
+                    }
+                })
+
+                xhr.upload.addEventListener("load", function(event){
+                    console.log("Complete")
+                    // handle FileItem Upload being complete.
+                    fileUploadComplete(fileItem, policyData)
+
+                })
+
+                xhr.open('POST', policyData.url , true);
+                xhr.send(fd);
+            })
+    }
+
+    });
+    </script>
+</head>
+<body>
+<header>
+    <div class="logout">
+        <a href="{% url 'logout' %}?next=/accounts/login">
+            <button class="btn btn-primary">Log out</button>
+        </a>
+    </div>
+</header>
+<main>
+    <form method="" class="post-form" enctype='multipart/form-data' action="">
+        {% csrf_token %}
+    <div class="container">
+<br>
+    <div class="form-group row">
+    <label class="col-sm-2 col-form-label">Name:</label>
+    <div class="col-sm-4">
+      <input type="text" name="name" maxlength="256" required="" id="id_name">
+    </div>
+  </div>
+  <div class="form-group row">
+    <label class="col-sm-2 col-form-label">Image:</label>
+    <div class="col-sm-4">
+        <div class='item-loading-queue'>
+
+        </div>
+      <input type="file" name="image" accept="image/*,video/*" required="" id="id_image">
+    </div>
+  </div>
+    <div class="form-group row">
+    <label class="col-sm-1 col-form-label"></label>
+    <div class="col-sm-4">
+    <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+    <div class="col-sm-4">
+    <button type="button" class="btn btn-primary" onclick="bg_change();">Background Change</button>
+    </div>
+
+  </div>
+    </div>
+</form>
+    <div class="modal fade" id="redirectModal" tabindex="-1" role="dialog"
+         aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">Success</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeModal();">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Image uploaded and tiles created successfully. Redirecting to google maps in
+                    <span id="seconds-counter">3</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<footer>
+</footer>
+</body>
+</html>
