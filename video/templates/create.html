@@ -8,6 +8,8 @@
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.2.43.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/evaporate/2.1.4/evaporate.js"></script>
     <script>
     function bg_change(){
         // console.log('in')
@@ -63,6 +65,19 @@
     $(document).on('change','#id_image', function(event){
         var selectedFiles = $(this).prop('files');
         formItem = $(this).parent()
+
+        /*const file = new File(['a'.repeat(1000000)], 'test.txt')
+
+        const chunkSize = 40000
+
+        for (let start = 0; start < file.size; start += chunkSize) {
+            const chunk = file.slice(start, start + chunkSize + 1)
+            const fd = new FormData()
+            fd.set('data', chunk)
+
+            await fetch(url, { method: 'post', body: fd }).then(res => res.text())
+        }*/
+
         $.each(selectedFiles, function(index, item){
             // var myFile = verifyFileIsImageMovieAudio(item)
             if (item){
@@ -105,16 +120,20 @@
         var url = policyData.url
         var filename = policyData.filename
         var responseUser = policyData.user
-        // var keyPath = 'www/' + responseUser + '/' + filename
         var keyPath = policyData.file_bucket_path
         var fd = new FormData()
         fd.append('key', keyPath + filename);
-        fd.append('acl','public-read');
-        fd.append('Content-Type', contentType);
+        // fd.append('Content-Type', contentType);
         fd.append("AWSAccessKeyId", policyData.key)
         fd.append('Policy', policyData.policy);
-        fd.append('filename', filename);
         fd.append('Signature', policyData.signature);
+        /*fd.append("conditions", [
+                        {"acl": "public-read" },
+                        {"filename": filename },
+                        {"bucket": "demdembucket" },
+                        // ["starts-with", "$key", keyPath + filename],
+                        ["starts-with", "$Content-Type", contentType],
+                      ])*/
         fd.append('file', fileItem);
         return fd
     }
@@ -180,65 +199,68 @@
 
 
     function uploadFile(fileItem){
-            var policyData;
-            var newLoadingItem;
-            // get AWS upload policy for each file uploaded through the POST method
-            // Remember we're creating an instance in the backend so using POST is
-            // needed.
-            console.log('prior to backend ajax')
-            $.ajax({
-                method:"POST",
-                data: {
-                    filename: fileItem.name
-                },
-                url: "/video/api/files/policy/",
-                success: function(data){
-                        policyData = data
-                },
-                error: function(data){
-                    alert("An error occured, please try again later")
-                }
-            }).done(function(){
-                // construct the needed data using the policy for AWS
-                var fd = constructFormPolicyData(policyData, fileItem)
-                console.log('prior xhr')
-                // use XML http Request to Send to AWS.
-                var xhr = new XMLHttpRequest()
+        var policyData;
+        var newLoadingItem;
+        // get AWS upload policy for each file uploaded through the POST method
+        // Remember we're creating an instance in the backend so using POST is
+        // needed.
+        console.log('prior to backend ajax')
+        $.ajax({
+            method:"POST",
+            data: {
+                filename: fileItem.name + 'test_cat_test'
+            },
+            url: "/video/api/files/policy/",
+            success: function(data){
+                    policyData = data
+                    console.log('data from backend: ', data)
+            },
+            error: function(data){
+                console.log(data)
+                alert("An error: ", data["error"])
+            }
+        }).done(function(){
+            // construct the needed data using the policy for AWS
+            var fd = constructFormPolicyData(policyData['fields'], fileItem)
+            //var fd = policyData['fields']
+            console.log('prior xhr')
+            // use XML http Request to Send to AWS.
+            var xhr = new XMLHttpRequest()
 
-                // construct callback for when uploading starts
-                xhr.upload.onloadstart = function(event){
-                    var inLoadingIndex = $.inArray(fileItem, fileItemList)
-                    if (inLoadingIndex == -1){
-                        // Item is not loading, add to inProgress queue
-                        newLoadingItem = {
-                            file: fileItem,
-                            id: policyData.file_uuid,
-                            order: fileItemList.length + 1
-                        }
-                        fileItemList.push(newLoadingItem)
-                      }
-                    fileItem.xhr = xhr
-                }
-
-                // Monitor upload progress and attach to fileItem.
-                xhr.upload.addEventListener("progress", function(event){
-                    if (event.lengthComputable) {
-                     var progress = Math.round(event.loaded / event.total * 100);
-                        fileItem.progress = progress
-                        displayItems(fileItemList)
+            // construct callback for when uploading starts
+            xhr.upload.onloadstart = function(event){
+                var inLoadingIndex = $.inArray(fileItem, fileItemList)
+                if (inLoadingIndex == -1){
+                    // Item is not loading, add to inProgress queue
+                    newLoadingItem = {
+                        file: fileItem,
+                        id: 'test_id',                        //policyData.file_uuid,
+                        order: fileItemList.length + 1
                     }
-                })
+                    fileItemList.push(newLoadingItem)
+                  }
+                fileItem.xhr = xhr
+            }
 
-                xhr.upload.addEventListener("load", function(event){
-                    console.log("Complete")
-                    // handle FileItem Upload being complete.
-                    fileUploadComplete(fileItem, policyData)
-
-                })
-
-                xhr.open('POST', policyData.url , true);
-                xhr.send(fd);
+            // Monitor upload progress and attach to fileItem.
+            xhr.upload.addEventListener("progress", function(event){
+                if (event.lengthComputable) {
+                 var progress = Math.round(event.loaded / event.total * 100);
+                    fileItem.progress = progress
+                    displayItems(fileItemList)
+                }
             })
+
+            xhr.upload.addEventListener("load", function(event){
+                console.log("Complete")
+                // handle FileItem Upload being complete.
+                // fileUploadComplete(fileItem, policyData)
+
+            })
+
+            xhr.open('POST', policyData['url'] , true);
+            xhr.send(fd);
+        })
     }
 
     });
@@ -308,5 +330,63 @@
 </main>
 <footer>
 </footer>
+<script language="javascript">
+    /*$(document).ready(function(){
+        Evaporate.create({
+            aws_key: `{{public_key}}`,
+            bucket: "{{bucket_name}}",
+            awsRegion: 'us-west-2',
+            signerUrl: "{{signer_url}}",
+            awsSignatureVersion: '4',
+            computeContentMd5: true,
+            cryptoMd5Method: function (data) { console.log("******************************************"); console.log("data that is md5ed: ", data); console.log("data end"); return AWS.util.crypto.md5(data, 'base64'); },
+            cryptoHexEncodedHash256: function (data) { console.log("_____________________________________"); console.log("data that is sha256ed: ", data); console.log("data end"); return AWS.util.crypto.sha256(data, 'hex'); }
+        })
+        .then(
+            // Successfully created evaporate instance `_e_`
+            function success(_e_) {
+                var fileInput = document.getElementById('id_image'),
+                  filePromises = [];
+
+                // Start a new evaporate upload anytime new files are added in the file input
+                fileInput.onchange = function(evt) {
+                var files = evt.target.files;
+                for (var i = 0; i < files.length; i++) {
+                    var promise = _e_.add({
+                        name: 'test_' + Math.floor(1000000000*Math.random()),
+                        file: files[i],
+                        xAmzHeadersAtInitiate: {'x-amz-acl': 'public-read'},
+                        xAmzHeadersCommon: {'x-amz-security-token': AWS.config.credentials.sessionToken},
+                        progress: function (progress) {
+                            console.log('making progress: ' + progress);
+                        }
+                    })
+                    .then(function (awsKey) {
+                        console.log(awsKey, 'complete!');
+                    });
+                    filePromises.push(promise);
+                }
+
+                // Wait until all promises are complete
+                Promise.all(filePromises)
+                .then(function () {
+                    console.log('All files were uploaded successfully.');
+                }, function (reason) {
+                    console.log('All files were not uploaded successfully:', reason);
+                });
+
+                // Clear out the file picker input
+                evt.target.value = '';
+                };
+            },
+
+            // Failed to create new instance of evaporate
+            function failure(reason) {
+                console.log('Evaporate failed to initialize: ', reason)
+            }
+        );
+
+    });*/
+</script>
 </body>
 </html>

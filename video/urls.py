@@ -7,4 +7,5 @@ urlpatterns = [
     path('list', views.image_list, name='image_list'),
     path(r'api/files/policy/', views.FilePolicyAPI.as_view(), name='upload-policy'),
     path(r'api/upload/complete/', views.FileSuccessAPI.as_view(), name='upload-complete'),
+    path(r'api/signedurl', views.FileAuthAPI.as_view(), name='signer-url'),
 ]

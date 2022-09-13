@@ -40,3 +40,6 @@ rio-tiler==3.0.3
 
 # Python Image Library
 pillow
+
+#AWS SDK
+boto3
