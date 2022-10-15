@@ -123,17 +123,12 @@
         var keyPath = policyData.file_bucket_path
         var fd = new FormData()
         fd.append('key', keyPath + filename);
-        // fd.append('Content-Type', contentType);
+        fd.append('acl','public-read');
+        fd.append('Content-Type', contentType);
         fd.append("AWSAccessKeyId", policyData.key)
         fd.append('Policy', policyData.policy);
+        fd.append('filename', filename);
         fd.append('Signature', policyData.signature);
-        /*fd.append("conditions", [
-                        {"acl": "public-read" },
-                        {"filename": filename },
-                        {"bucket": "demdembucket" },
-                        // ["starts-with", "$key", keyPath + filename],
-                        ["starts-with", "$Content-Type", contentType],
-                      ])*/
         fd.append('file', fileItem);
         return fd
     }
@@ -164,6 +159,7 @@
             upload_url: policyData.url + '/' + policyData.file_bucket_path + policyData.filename
 
         }
+        console.log(data, 'whole data')
         $.ajax({
             method:"POST",
             data: data,
@@ -208,7 +204,7 @@
         $.ajax({
             method:"POST",
             data: {
-                filename: fileItem.name + 'test_cat_test'
+                filename: fileItem.name
             },
             url: "/video/api/files/policy/",
             success: function(data){
@@ -221,7 +217,7 @@
             }
         }).done(function(){
             // construct the needed data using the policy for AWS
-            var fd = constructFormPolicyData(policyData['fields'], fileItem)
+            var fd = constructFormPolicyData(policyData, fileItem)
             //var fd = policyData['fields']
             console.log('prior xhr')
             // use XML http Request to Send to AWS.
@@ -254,7 +250,7 @@
             xhr.upload.addEventListener("load", function(event){
                 console.log("Complete")
                 // handle FileItem Upload being complete.
-                // fileUploadComplete(fileItem, policyData)
+                fileUploadComplete(fileItem, policyData)
 
             })
 
