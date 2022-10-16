@@ -86,22 +86,27 @@ def tile_creating_function(file_url, file_uuid):
     ortho_obj.save()
 
     images_path = os.path.join(settings.BASE_DIR, f'TileImages')
-    tile_gen(images_path, ortho_obj.id)
-    images_path = os.path.join(settings.BASE_DIR, f'TileImages/{ortho_obj.id}')
-    files = [os.path.join(images_path, f) for f in os.listdir(images_path) if os.path.isfile(os.path.join(images_path, f))]
-    session = boto3.Session(aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
-    s3client = session.resource('s3')
-    bucket = s3client.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
+    tiles_status = tile_gen(images_path, ortho_obj.id)
+    if type(tiles_status) == int and tiles_status == ortho_obj.id:
+        images_path = os.path.join(settings.BASE_DIR, f'TileImages/{ortho_obj.id}')
+        files = [os.path.join(images_path, f) for f in os.listdir(images_path) if
+                 os.path.isfile(os.path.join(images_path, f))]
+        session = boto3.Session(aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
+        s3client = session.resource('s3')
+        bucket = s3client.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
 
-    for file in files:
-        upload_start_path, obj_uuid, filename_final, username_str, tile_obj = create_image_object(file, tile_image=True,
-                                                                                                  ortho_id=ortho_obj.id)
-        bucket.upload_file(file, '{path}/{name}'.format(path=upload_start_path, name=filename_final),
-                           ExtraArgs={'ACL': 'public-read'})
-        tile_url = 'https://{custom_url}/{path}/{name}'.format(custom_url=settings.AWS_S3_CUSTOM_DOMAIN,
-                                                               path=upload_start_path, name=filename_final)
-        tile_obj.image_url = tile_url
-        tile_obj.save()
+        for file in files:
+            upload_start_path, obj_uuid, filename_final, username_str, tile_obj = create_image_object(file,
+                                                                                                      tile_image=True,
+                                                                                                      ortho_id=ortho_obj.id)
+            bucket.upload_file(file, '{path}/{name}'.format(path=upload_start_path, name=filename_final),
+                               ExtraArgs={'ACL': 'public-read'})
+            tile_url = 'https://{custom_url}/{path}/{name}'.format(custom_url=settings.AWS_S3_CUSTOM_DOMAIN,
+                                                                   path=upload_start_path, name=filename_final)
+            tile_obj.image_url = tile_url
+            tile_obj.save()
 
-    return ortho_obj.id
+        return ortho_obj.id
+    elif type(tiles_status) == str:
+        return tiles_status

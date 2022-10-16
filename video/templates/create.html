@@ -3,26 +3,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Upload/Create</title>
+    <title>Upload Ortho Images</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.2.43.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/evaporate/2.1.4/evaporate.js"></script>
     <script>
     function bg_change(){
-        // console.log('in')
         color = Math.floor(Math.random() * 4)
         console.log(color)
         colors = ['rgb(88, 162, 92)', 'rgb(0, 162, 92)', 'rgb(88, 0, 92)', 'rgb(88, 162, 0)']
-        console.log(colors[color])
         $('body').css('background-color', colors[color])
-        console.log('out')
-    }
-    function closeModal(){
-        $('#redirectModal').addClass('fade');
-        $('#redirectModal').removeClass('d-block');
     }
     $(document).ready(function(){
 
@@ -81,7 +72,6 @@
         $.each(selectedFiles, function(index, item){
             // var myFile = verifyFileIsImageMovieAudio(item)
             if (item){
-                console.log('before upload function')
                 uploadFile(item)
             } else {
                 alert("Some files are invalid uploads.")
@@ -142,13 +132,22 @@
             count-=1
         }
         else{
-            console.log('clearing counter')
-            window.clearInterval(counter);
-            console.log(redirect_url)
-            if(!$('#redirectModal').hasClass('fade')){
-                window.location.href = redirect_url;
-            }
+            redirectToPage();
         }
+    }
+
+    function redirectToPage(){
+        window.clearInterval(counter);
+        console.log(redirect_url)
+        if(!$('#redirectModal').hasClass('fade')){
+            window.location.href = redirect_url;
+        }
+    }
+
+    function closePopup(){
+        $('#redirectModal').removeClass('d-block');
+        $('#redirectModal').addClass('fade');
+        window.clearInterval(counter);
     }
 
     function fileUploadComplete(fileItem, policyData){
@@ -159,14 +158,11 @@
             upload_url: policyData.url + '/' + policyData.file_bucket_path + policyData.filename
 
         }
-        console.log(data, 'whole data')
         $.ajax({
             method:"POST",
             data: data,
             url: "api/upload/complete/",
             success: function(data){
-                //alert(data.result)
-                console.log(data.urls)
                 redirect_url = data.urls;
                 $('#redirectModal').addClass('d-block');
                 $('#redirectModal').removeClass('fade');
@@ -200,7 +196,6 @@
         // get AWS upload policy for each file uploaded through the POST method
         // Remember we're creating an instance in the backend so using POST is
         // needed.
-        console.log('prior to backend ajax')
         $.ajax({
             method:"POST",
             data: {
@@ -209,17 +204,14 @@
             url: "/video/api/files/policy/",
             success: function(data){
                     policyData = data
-                    console.log('data from backend: ', data)
             },
             error: function(data){
-                console.log(data)
                 alert("An error: ", data["error"])
             }
         }).done(function(){
             // construct the needed data using the policy for AWS
             var fd = constructFormPolicyData(policyData, fileItem)
             //var fd = policyData['fields']
-            console.log('prior xhr')
             // use XML http Request to Send to AWS.
             var xhr = new XMLHttpRequest()
 
@@ -248,7 +240,6 @@
             })
 
             xhr.upload.addEventListener("load", function(event){
-                console.log("Complete")
                 // handle FileItem Upload being complete.
                 fileUploadComplete(fileItem, policyData)
 
@@ -307,8 +298,8 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLongTitle">Success</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeModal();">
+<!--                    <h5 class="modal-title" id="exampleModalLongTitle">Image Uploaded Successfully</h5>-->
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closePopup();">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -317,72 +308,13 @@
                     <span id="seconds-counter">3</span>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                            onclick="closePopup();">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="redirectToPage();">Proceed to Map</button>
                 </div>
             </div>
         </div>
     </div>
 </main>
-<footer>
-</footer>
-<script language="javascript">
-    /*$(document).ready(function(){
-        Evaporate.create({
-            aws_key: `{{public_key}}`,
-            bucket: "{{bucket_name}}",
-            awsRegion: 'us-west-2',
-            signerUrl: "{{signer_url}}",
-            awsSignatureVersion: '4',
-            computeContentMd5: true,
-            cryptoMd5Method: function (data) { console.log("******************************************"); console.log("data that is md5ed: ", data); console.log("data end"); return AWS.util.crypto.md5(data, 'base64'); },
-            cryptoHexEncodedHash256: function (data) { console.log("_____________________________________"); console.log("data that is sha256ed: ", data); console.log("data end"); return AWS.util.crypto.sha256(data, 'hex'); }
-        })
-        .then(
-            // Successfully created evaporate instance `_e_`
-            function success(_e_) {
-                var fileInput = document.getElementById('id_image'),
-                  filePromises = [];
-
-                // Start a new evaporate upload anytime new files are added in the file input
-                fileInput.onchange = function(evt) {
-                var files = evt.target.files;
-                for (var i = 0; i < files.length; i++) {
-                    var promise = _e_.add({
-                        name: 'test_' + Math.floor(1000000000*Math.random()),
-                        file: files[i],
-                        xAmzHeadersAtInitiate: {'x-amz-acl': 'public-read'},
-                        xAmzHeadersCommon: {'x-amz-security-token': AWS.config.credentials.sessionToken},
-                        progress: function (progress) {
-                            console.log('making progress: ' + progress);
-                        }
-                    })
-                    .then(function (awsKey) {
-                        console.log(awsKey, 'complete!');
-                    });
-                    filePromises.push(promise);
-                }
-
-                // Wait until all promises are complete
-                Promise.all(filePromises)
-                .then(function () {
-                    console.log('All files were uploaded successfully.');
-                }, function (reason) {
-                    console.log('All files were not uploaded successfully:', reason);
-                });
-
-                // Clear out the file picker input
-                evt.target.value = '';
-                };
-            },
-
-            // Failed to create new instance of evaporate
-            function failure(reason) {
-                console.log('Evaporate failed to initialize: ', reason)
-            }
-        );
-
-    });*/
-</script>
 </body>
 </html>

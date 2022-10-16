@@ -4,51 +4,75 @@
 <head>
     <title>Crop Overlay</title>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
-    <!-- jsFiddle will insert css and js -->
     <link rel="stylesheet" href="{% static 'css/index.css' %}">
 </head>
 <body>
 <div id="map"></div>
 
 <!-- Async script executes immediately and must be after any DOM elements used in callback. -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR2xMJk72r95KiV3BZszACIAy5SaCIb-k&callback=initMap&v=weekly&channel=2" async></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAR2xMJk72r95KiV3BZszACIAy5SaCIb-k&callback=initMap&v=weekly&channel=2"
+        async></script>
 <!--<script src="{% static 'js/index.js' %}"></script>-->
 <script>
     var boundMarks = JSON.parse(`{{coordinates}}`.replace(/&quot;/g,'"'))
+    function headMap(amount) {
+        console.log(amount);
+        map.setHeading(map.getHeading() + amount);
+    }
     function initMap() {
-  const map = new google.maps.Map(document.getElementById("map"), {
-    zoom: 18,
-    center: { lat: {{latitude}}, lng: {{longitude}} },
-    mapTypeId: 'satellite'
-  });
-  const bounds = boundMarks
-  const imageMapType = new google.maps.ImageMapType({
-    getTileUrl: function (coord, zoom) {
-      if (
-        zoom < 18 || zoom > 21 ||
-        bounds[zoom][0][0] > coord.x ||
-        coord.x > bounds[zoom][0][1] ||
-        bounds[zoom][1][0] > coord.y ||
-        coord.y > bounds[zoom][1][1]
-      ) {
-        return "";
-      }
-      var img_url = [
-        "{{folder_url}}",
-        zoom,
-        "_",
-        coord.x,
-        "_",
-        coord.y,
-        ".png",
-      ].join("");
-      return img_url;
-    },
-    tileSize: new google.maps.Size(256, 256),
-  });
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 18,
+            center: { lat: {{latitude}}, lng: {{longitude}} },
+            mapTypeId: 'satellite',
+            heading: 0,
+            mapId: "90f87356969d889c",
+        });
 
-  map.overlayMapTypes.push(imageMapType);
-}
+        const buttons = [
+            ["Rotate Left", "rotate", 22.5, google.maps.ControlPosition.LEFT_CENTER],
+            ["Rotate Right", "rotate", -22.5, google.maps.ControlPosition.RIGHT_CENTER],
+        ];
+
+        buttons.forEach(([text, mode, amount, position]) => {
+            const controlDiv = document.createElement("div");
+            const controlUI = document.createElement("button");
+            controlUI.classList.add("ui-button");
+            controlUI.innerText = `${text}`;
+            controlUI.setAttribute("onclick", "headMap(" + amount + ")");
+            controlDiv.appendChild(controlUI);
+            map.controls[position].push(controlDiv);
+        });
+
+        const bounds = boundMarks
+        const imageMapType = new google.maps.ImageMapType({
+            getTileUrl: function (coord, zoom) {
+                if (
+                    zoom < 18 || zoom > 21 ||
+                    bounds[zoom][0][0] > coord.x ||
+                    coord.x > bounds[zoom][0][1] ||
+                    bounds[zoom][1][0] > coord.y ||
+                    coord.y > bounds[zoom][1][1]
+                ) {
+                    return "";
+                }
+                var img_url = [
+                    "{{folder_url}}",
+                    zoom,
+                    "_",
+                    coord.x,
+                    "_",
+                    coord.y,
+                    ".png",
+                ].join("");
+                    return img_url;
+            },
+            tileSize: new google.maps.Size(256, 256),
+        });
+        map.overlayMapTypes.push(imageMapType);
+
+        window.map = map;
+    }
+    window.initMap = initMap;
 </script>
 </body>
 </html>
