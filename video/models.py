@@ -18,7 +18,7 @@ class BaseAbstractModel(models.Model):
 
 class Customer(BaseAbstractModel):
     customer_name = models.CharField(max_length=2048)
-    customer_slug = models.CharField(max_length=2048, null=True, blank=True)
+    customer_slug = models.CharField(max_length=2048, null=True, blank=True)   # let it be blank, code will create slugs
 
     def __str__(self):
         return str(self.id) + '-' + str(self.customer_name)
@@ -66,4 +66,5 @@ class CustomUser(models.Model):
         return str(self.id) + '-' + str(self.customer.customer_name) + '-' + str(self.user_obj.username)
 
 
-# ToDo Remove null True Blank True in required fields after loop is completed
+# ToDo Remove null True Blank True in OrthoImage - customer, TileImage customer, parent_ortho
+#  fields after loop is completed i.e those fields are given input at the point of obj creation

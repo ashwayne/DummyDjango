@@ -2,32 +2,124 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Images List</title>
-<!--    <link rel="stylesheet" href="{ static 'css/style.css' }"/>  -->
+    <title>Dashboard</title>
+    <!--    <link rel="stylesheet" href="{ static 'css/style.css' }"/>  -->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/macy@2"></script>
+    <script>
+        function loadDefault(image_tag){
+            $(image_tag).attr('src','https://demdembucket.s3.us-west-2.amazonaws.com/static/default.jpg');
+        }
+    </script>
+    <style>
+        @font-face {font-family: "Atlas Grotesk Web Light"; src: url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.eot"); src: url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.woff") format("woff"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.svg#Atlas Grotesk Web Light") format("svg"); }
+        html{
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        body{
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            font-family: "Atlas Grotesk Web Light";
+            font-size: 13px;
+            overflow: hidden;
+        }
+        header{
+            height: 56px;
+            width: 100%;
+            background-color: #edededb3;
+            display: inline-flex;
+            justify-content: space-between;
+        }
+        .logo{
+            display: inline-block;
+            font-size: 35px;
+            padding: 5px;
+            color: #00b29e;
+            transition: color 300ms ease 0s;
+            font-weight: 900;
+            font-family: sans-seriff;
+        }
+        .container{
+            width: calc(100%);
+            height: 90%;
+            overflow: auto;
+            padding: 40px 0px 0px 0;
+            margin: 0 auto;
+        }
+        a{
+            color: inherit;
+            text-decoration: none;
+        }
+        .ortho-unit{
+            display: inline-flex;
+            flex-direction: column;
+            max-width: 158px;
+            text-align: center;
+            height:180px;
+            width: 150px;
+        }
+        .ortho-unit img{
+            display:inline-block;
+            height: calc(100% - 31px);
+            margin: 0 auto;
+        }
+        .ortho-unit span{
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background-color: #edededb3;
+            padding: 7px 0;
+        }
+        .unit-link{
+            display: inline-block;
+            border: solid 1px lightgray;
+            border-radius: 8px;
+            margin-right: 40px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+        .add-button{
+            display: inline-block;
+            border: solid 1px lightgray;
+            padding: 8px;
+            margin: 12px;
+            border-radius: 4px;
+            background-color: #00b29e;
+            color: white;
+            font-size: 10px;
+        }
+    </style>
 </head>
 <body>
-<table class="table table-striped table-bordered table-sm">
-    <thead class="thead-dark">
-    <tr>
-        <th>Name</th>
-        <th>Image</th>
-    </tr>
-    </thead>
-    <tbody>
-        {% for object in images %}
-            <tr>
-                <td>{{ object.name }}</td>
-                <td>{{ object.image }}</td>
-                <td><img src="{{object.image.url}}" height="100px" width="100px"></td>
-                <td>
-                    <a href="/edit/{{ employee.id }}"><span class="glyphicon glyphicon-pencil" >Edit</span></a>
-                </td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<br>
-<br>
-<center><a href="/video/upload" class="btn btn-primary">Add New Record</a></center>
+    <a style="display: none;" href="http://www.onlinewebfonts.com">Online Web Fonts</a>
+    <header>
+        <div class="add-button"><a href="/video/upload">ADD IMAGE</a></div>
+        <div class="logo">Aviac</div>
+        <div class="logout add-button"><a href="{% url 'logout' %}?next=/accounts/login">SIGN OUT</a></div>
+    </header>
+    <div class="container">
+    {% for object, thumbnail in two_lists %}
+        <a class="unit-link" href="{% if object.id in thumbnails %}{{ thumbnails.object.id }}{% else %}{{object.image_url}}{% endif %}">
+            <div class="ortho-unit">
+                <img src="{{thumbnail}}" onerror="loadDefault(this)">
+                <span>{{ object.ortho_name }}</span>
+            </div>
+        </a>
+    {% endfor %}
+    </div>
+<script>
+    $(document).ready(function(){
+        macyInstance = Macy({
+            default: ".container",
+            margin: 24,
+            column: 5
+        });
+    });
+</script>
 </body>
 </html>

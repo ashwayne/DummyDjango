@@ -4,20 +4,48 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.conf import settings
-from django.shortcuts import render, reverse
+from django.shortcuts import reverse
 from django.views.generic.edit import CreateView
+from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Upload, OrthoImage, TileImage
+from .models import Upload, OrthoImage, TileImage, CustomUser
 from .utils import create_image_object, tile_creating_function, get_policy
 
 
 class UploadView(LoginRequiredMixin, CreateView):
-    model = Upload
-    fields = ['name', 'image']
+    """
+    Create/Upload page base view, share data for template through context data if needed.
+    """
+    model = OrthoImage
+    fields = ['ortho_name']
+
+
+class OrthoListView(LoginRequiredMixin, ListView):
+    """
+    Dashboard page showing list of all the map pages with the given name
+    """
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        customer_obj = CustomUser.objects.get(user_obj__id=user_id).customer
+        queryset = OrthoImage.objects.filter(customer=customer_obj).order_by('-created_at')
+        return queryset
 
     def get_context_data(self, **kwargs):
-        context_data = super(UploadView, self).get_context_data(**kwargs)
+        context_data = super(OrthoListView, self).get_context_data(**kwargs)
+        q_set = self.get_queryset()
+        thumbnails = []
+        for o in q_set:
+            tile = TileImage.objects.filter(parent_ortho=o, tile_name__startswith=17)
+            if tile:
+                thumbnails.append(tile[0].image_url)
+            elif not tile and (str(o.image_url).endswith('tiff') or str(o.image_url).endswith('tif')):
+                thumbnails.append(settings.DEFAULT_LAND_IMAGE)
+            else:
+                thumbnails.append(o.image_url)
+        context_data.update({'two_lists': zip(q_set, thumbnails)})
+        print(context_data['two_lists'])
         return context_data
 
 
@@ -25,10 +53,10 @@ class FilePolicyAPI(APIView):
 
     def post(self, request, *args, **kwargs):
         """
-        The initial post request includes the filename
-        and auth credentials. In our case, we'll use
-        Session Authentication but any auth should work.
+        API for getting pre-signed url and create an object for the ortho image to link it with DB for future reference.
         """
+
+        # import ipdb; ipdb.set_trace()
 
         filename_req = request.data.get('filename')
         if not filename_req:
@@ -37,7 +65,8 @@ class FilePolicyAPI(APIView):
         """
         image_url - media/customer_slug/ortho/YYYYMMDD/uuid.<tif/png/jpg>
         """
-        upload_start_path, obj_uuid, filename_final, username_str, ortho_obj = create_image_object(filename_req)
+        upload_start_path, obj_uuid, filename_final, username_str, ortho_obj = create_image_object(filename_req,
+                                                                                                   request.user.id)
         url, policy, signature = get_policy(policy_expires, upload_start_path)
 
         data = {
@@ -55,6 +84,9 @@ class FilePolicyAPI(APIView):
 
 
 class MapView(LoginRequiredMixin, DetailView):
+    """
+    The map page layout view
+    """
 
     def get_queryset(self):
         obj_id = int(self.kwargs['id'])

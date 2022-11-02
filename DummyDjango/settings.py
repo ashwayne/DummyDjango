@@ -135,4 +135,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
-LOGIN_REDIRECT_URL = "/video/upload"
+LOGIN_REDIRECT_URL = "/video/dashboard"
+
+DEFAULT_LAND_IMAGE = 'https://demdembucket.s3.us-west-2.amazonaws.com/static/default.jpg'

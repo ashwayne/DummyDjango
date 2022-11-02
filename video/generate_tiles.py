@@ -17,8 +17,11 @@ def tile_gen(path, file_id):
     ortho_obj = OrthoImage.objects.get(id=file_id)
     coordinates = {}
     prev_tile = []
-    with COGReader(ortho_obj.image_url) as cog:
-        try:
+
+    try:
+        # COGReader(ortho_obj.image_url)
+        # import ipdb; ipdb.set_trace()
+        with COGReader(ortho_obj.image_url) as cog:
             ortho_obj.latitude = (cog.geographic_bounds[1] + cog.geographic_bounds[3])/2
             ortho_obj.longitude = (cog.geographic_bounds[0] + cog.geographic_bounds[2])/2
 
@@ -43,9 +46,9 @@ def tile_gen(path, file_id):
             coordinates = json.dumps(coordinates, indent=4)
             ortho_obj.tile_coordinates = str(coordinates)
             ortho_obj.save()
-        except Exception as e:
-            error_string = "Error during tile image creation, image probably is not an ortho image \n" + str(e)
-            print(error_string)
-            return error_string
+    except Exception as e:
+        error_string = "Error during tile image creation, image probably is not an ortho image \n" + str(e)
+        print(error_string)
+        return error_string
 
-        return file_id
+    return file_id

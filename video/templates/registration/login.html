@@ -6,17 +6,102 @@
     <title>Aviac Sense</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}"/>
+<!--    <link rel="stylesheet" href="{% static 'css/base.css' %}"/>-->
+    <style>
+        @font-face {font-family: "Atlas Grotesk Web Light"; src: url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.eot"); src: url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.woff") format("woff"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/43372a4ce8dc3abbca31595815be7cf3.svg#Atlas Grotesk Web Light") format("svg"); }
+        html{
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        body{
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            font-family: "Atlas Grotesk Web Light";
+            font-size: 13px;
+            overflow: hidden;
+        }
+        header{
+            height: 56px;
+            width: 100%;
+            background-color: #edededb3;
+            display: inline-flex;
+            justify-content: center;
+        }
+        label{
+            width: 60px;
+        }
+        input {
+            border: solid 1px black;
+            border-radius: 3px;
+            margin-left: 10px;
+            width: 200px;
+        }
+        .logo{
+            display: inline-block;
+            font-size: 35px;
+            padding: 5px;
+            color: #00b29e;
+            transition: color 300ms ease 0s;
+            font-weight: 900;
+            font-family: sans-seriff;
+        }
+        .add-button{
+            display: inline-block;
+            border: solid 1px lightgray;
+            padding: 8px;
+            margin: 12px;
+            border-radius: 4px;
+            background-color: #00b29e;
+            color: white;
+            font-size: 10px;
+            margin-left: 0px;
+        }
+        main{
+            height: 70%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        footer{
+            height: 15%;
+            width: 100%;
+        }
+        a{
+            color: inherit;
+            text-decoration: none;
+        }
+        .log-in{
+            height: calc(100% - 56px);
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    </style>
 </head>
 <body class="login-body">
-<div class="log-in">
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-        <div class="col-sm-12 px-0">
-        <button type="submit" class="btn btn-primary log-in-btn w-100">Log In</button>
-        </div>
-    </form>
-</div>
+    <a style="display: none;" href="http://www.onlinewebfonts.com">Online Web Fonts</a>
+    <header>
+        <div class="logo">Aviac</div>
+    </header>
+    <div class="log-in">
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+            <div class="col-sm-12 px-0">
+            <button type="submit" class="add-button log-in-btn w-100">LOG IN</button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

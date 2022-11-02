@@ -7,16 +7,17 @@ import os
 from copy import deepcopy
 from django.conf import settings
 from django.contrib.auth.models import User
-from .models import OrthoImage, Customer, TileImage
+from .models import OrthoImage, Customer, TileImage, CustomUser
 from .constants import POLICY_DOCUMENT_CONTEXT
 from .generate_tiles import tile_gen
 
 
-def create_image_object(filename_req, tile_image=False, ortho_id=None):
+def create_image_object(filename_req, user_id, tile_image=False, ortho_id=None):
     # TODO: Remove temporary user, customer after creating permissions
-    user = User.objects.get(id=1)
+    user = User.objects.get(id=user_id)
     username_str = str(user.username)
-    customer_obj = Customer.objects.get(id=2)
+    custom_user = CustomUser.objects.get(user_obj=user)
+    customer_obj = custom_user.customer
     if tile_image:
         filename_req = filename_req.split(str(os.path.join(settings.BASE_DIR, 'TileImages', f'{ortho_id}')) + '/')[1]
         parent_ortho_obj = OrthoImage.objects.get(id=ortho_id)
@@ -87,6 +88,7 @@ def tile_creating_function(file_url, file_uuid):
 
     images_path = os.path.join(settings.BASE_DIR, f'TileImages')
     tiles_status = tile_gen(images_path, ortho_obj.id)
+    print("Tile status check: ", tiles_status)
     if type(tiles_status) == int and tiles_status == ortho_obj.id:
         images_path = os.path.join(settings.BASE_DIR, f'TileImages/{ortho_obj.id}')
         files = [os.path.join(images_path, f) for f in os.listdir(images_path) if
@@ -96,8 +98,13 @@ def tile_creating_function(file_url, file_uuid):
         s3client = session.resource('s3')
         bucket = s3client.Bucket(settings.AWS_STORAGE_BUCKET_NAME)
 
+        client_users = CustomUser.objects.filter(customer=ortho_obj.customer)
+        if client_users:
+            user_id = client_users.first().user_obj.id
+        else:
+            user_id = 1
         for file in files:
-            upload_start_path, obj_uuid, filename_final, username_str, tile_obj = create_image_object(file,
+            upload_start_path, obj_uuid, filename_final, username_str, tile_obj = create_image_object(file, user_id,
                                                                                                       tile_image=True,
                                                                                                       ortho_id=ortho_obj.id)
             bucket.upload_file(file, '{path}/{name}'.format(path=upload_start_path, name=filename_final),
